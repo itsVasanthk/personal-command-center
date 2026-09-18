@@ -1,19 +1,15 @@
 export interface DailyRecord {
   id: number;
   date: string;
-  study_hours: number;
-  aptitude_questions: number;
-  dsa_problems: number;
-  python_hours: number;
-  other_learning_hours: number;
-  work_hours: number;
+  aptitude_minutes: number;
+  dsa_minutes: number;
+  other_learning_minutes: number;
+  work_minutes: number;
   income: number;
   expenses: number;
   workout_completed: number; // 0 or 1
   workout_minutes: number;
   weight: number;
-  screen_time_minutes: number;
-  sleep_hours: number;
   tasks_completed: number;
   tasks_total: number;
   daily_score: number;
@@ -36,6 +32,7 @@ export interface Goal {
   id: number;
   title: string;
   category: string;
+  metric: string;
   target: number;
   period: string;
   start_date: string;
