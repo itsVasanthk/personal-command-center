@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TextInput, ScrollView, Button, Switch, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, StyleSheet, TextInput, ScrollView, TouchableOpacity, Switch, KeyboardAvoidingView, Platform } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useStore } from '../store';
 import { useAppTheme } from '../theme';
 import * as db from '../database';
 import { getToday } from '../utils/dateUtils';
 import { DailyRecord } from '../models';
+import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 
 export const DailyEntryScreen = () => {
   const { colors, spacing, typography, radius, shadows } = useAppTheme();
@@ -21,19 +23,26 @@ export const DailyEntryScreen = () => {
 
   const [loading, setLoading] = useState(!isToday);
 
-  // Helper to init state
-  const getHours = (mins: number) => Math.floor((mins || 0) / 60).toString();
-  const getMins = (mins: number) => ((mins || 0) % 60).toString();
+  // Helper to init state without 0s
+  const getHours = (mins: number) => {
+    const h = Math.floor((mins || 0) / 60);
+    return h === 0 ? '' : h.toString();
+  };
+  const getMins = (mins: number) => {
+    const m = (mins || 0) % 60;
+    return m === 0 ? '' : m.toString();
+  };
+  const getVal = (val: number | undefined) => (val && val !== 0) ? val.toString() : '';
 
   const [form, setForm] = useState({
-    aptitude_hours: '0', aptitude_mins: '0',
-    dsa_hours: '0', dsa_mins: '0',
-    other_learning_hours: '0', other_learning_mins: '0',
-    work_hours: '0', work_mins: '0',
-    income: '0', expenses: '0',
+    aptitude_hours: '', aptitude_mins: '',
+    dsa_hours: '', dsa_mins: '',
+    other_learning_hours: '', other_learning_mins: '',
+    work_hours: '', work_mins: '',
+    income: '', expenses: '',
     workout_completed: false,
-    workout_hours: '0', workout_mins: '0',
-    weight: '0', notes: ''
+    workout_hours: '', workout_mins: '',
+    weight: '', notes: ''
   });
 
   useEffect(() => {
@@ -50,10 +59,10 @@ export const DailyEntryScreen = () => {
         dsa_hours: getHours(sourceRecord.dsa_minutes), dsa_mins: getMins(sourceRecord.dsa_minutes),
         other_learning_hours: getHours(sourceRecord.other_learning_minutes), other_learning_mins: getMins(sourceRecord.other_learning_minutes),
         work_hours: getHours(sourceRecord.work_minutes), work_mins: getMins(sourceRecord.work_minutes),
-        income: sourceRecord.income?.toString() || '0', expenses: sourceRecord.expenses?.toString() || '0',
+        income: getVal(sourceRecord.income), expenses: getVal(sourceRecord.expenses),
         workout_completed: sourceRecord.workout_completed === 1,
         workout_hours: getHours(sourceRecord.workout_minutes), workout_mins: getMins(sourceRecord.workout_minutes),
-        weight: sourceRecord.weight?.toString() || '0', notes: sourceRecord.notes || ''
+        weight: getVal(sourceRecord.weight), notes: sourceRecord.notes || ''
       });
     }
     setLoading(false);
@@ -94,21 +103,45 @@ export const DailyEntryScreen = () => {
   };
 
   const renderTimeInput = (label: string, hourField: keyof typeof form, minField: keyof typeof form) => (
-    <View style={styles.timeFieldContainer}>
+    <View style={styles.fieldContainer}>
       <Text style={styles.label}>{label}</Text>
       <View style={styles.timeInputRow}>
-        <TextInput style={styles.timeInput} value={String(form[hourField])} onChangeText={(text) => setForm({ ...form, [hourField]: text })} keyboardType="numeric" placeholder="h" />
+        <TextInput 
+          style={styles.timeInput} 
+          value={form[hourField] as string} 
+          onChangeText={(text) => setForm({ ...form, [hourField]: text })} 
+          keyboardType="numeric" 
+          placeholder="0" 
+          placeholderTextColor={colors.border}
+        />
         <Text style={styles.timeLabel}>h</Text>
-        <TextInput style={styles.timeInput} value={String(form[minField])} onChangeText={(text) => setForm({ ...form, [minField]: text })} keyboardType="numeric" placeholder="m" />
+        <TextInput 
+          style={styles.timeInput} 
+          value={form[minField] as string} 
+          onChangeText={(text) => setForm({ ...form, [minField]: text })} 
+          keyboardType="numeric" 
+          placeholder="0" 
+          placeholderTextColor={colors.border}
+        />
         <Text style={styles.timeLabel}>m</Text>
       </View>
     </View>
   );
 
-  const renderInput = (label: string, field: keyof typeof form, keyboardType: 'numeric' | 'default' = 'numeric') => (
+  const renderInput = (label: string, field: keyof typeof form, keyboardType: 'numeric' | 'default' = 'numeric', prefix = '') => (
     <View style={styles.fieldContainer}>
       <Text style={styles.label}>{label}</Text>
-      <TextInput style={styles.input} value={String(form[field])} onChangeText={(text) => setForm({ ...form, [field]: text })} keyboardType={keyboardType} />
+      <View style={styles.singleInputWrapper}>
+        {prefix ? <Text style={styles.inputPrefix}>{prefix}</Text> : null}
+        <TextInput 
+          style={styles.input} 
+          value={form[field] as string} 
+          onChangeText={(text) => setForm({ ...form, [field]: text })} 
+          keyboardType={keyboardType} 
+          placeholder={keyboardType === 'numeric' ? '0' : 'Optional notes...'}
+          placeholderTextColor={colors.border}
+        />
+      </View>
     </View>
   );
 
@@ -118,49 +151,66 @@ export const DailyEntryScreen = () => {
   if (loading) return <View style={styles.container}><Text>Loading...</Text></View>;
 
   return (
-    <KeyboardAvoidingView 
-      style={styles.container} 
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
+    <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView contentContainerStyle={styles.scroll}>
         <Text style={styles.dateHeader}>{targetDate}</Text>
         
         {enabledMetrics.career && (
-          <>
-            <Text style={styles.sectionTitle}>Career</Text>
+          <LinearGradient colors={[colors.surface1, colors.background]} style={styles.card}>
+            <View style={styles.cardHeader}>
+              <Ionicons name="briefcase" size={20} color={colors.primary} />
+              <Text style={styles.sectionTitle}>Career</Text>
+            </View>
             {renderTimeInput('Aptitude', 'aptitude_hours', 'aptitude_mins')}
             {renderTimeInput('DSA', 'dsa_hours', 'dsa_mins')}
             {renderTimeInput('Other Learning', 'other_learning_hours', 'other_learning_mins')}
-          </>
+          </LinearGradient>
         )}
 
         {enabledMetrics.work && (
-          <>
-            <Text style={styles.sectionTitle}>Work</Text>
+          <LinearGradient colors={[colors.surface1, colors.background]} style={styles.card}>
+            <View style={styles.cardHeader}>
+              <Ionicons name="wallet" size={20} color={colors.primary} />
+              <Text style={styles.sectionTitle}>Work & Finance</Text>
+            </View>
             {renderTimeInput('Work Time', 'work_hours', 'work_mins')}
-            {renderInput(`Income (${currency})`, 'income')}
-            {renderInput(`Expenses (${currency})`, 'expenses')}
-          </>
+            {renderInput('Income', 'income', 'numeric', currency)}
+            {renderInput('Expenses', 'expenses', 'numeric', currency)}
+          </LinearGradient>
         )}
 
         {enabledMetrics.fitness && (
-          <>
-            <Text style={styles.sectionTitle}>Fitness</Text>
+          <LinearGradient colors={[colors.surface1, colors.background]} style={styles.card}>
+            <View style={styles.cardHeader}>
+              <Ionicons name="barbell" size={20} color={colors.primary} />
+              <Text style={styles.sectionTitle}>Fitness</Text>
+            </View>
             <View style={styles.fieldContainer}>
               <Text style={styles.label}>Workout Completed</Text>
-              <Switch value={form.workout_completed} onValueChange={(val) => setForm({ ...form, workout_completed: val })} />
+              <Switch 
+                value={form.workout_completed} 
+                onValueChange={(val) => setForm({ ...form, workout_completed: val })}
+                trackColor={{ false: colors.border, true: colors.primary }}
+              />
             </View>
             {renderTimeInput('Workout Duration', 'workout_hours', 'workout_mins')}
-            {renderInput('Weight (kg)', 'weight')}
-          </>
+            {renderInput('Weight', 'weight', 'numeric', 'kg')}
+          </LinearGradient>
         )}
 
-        <Text style={styles.sectionTitle}>Notes</Text>
-        {renderInput('Notes', 'notes', 'default')}
+        <LinearGradient colors={[colors.surface1, colors.background]} style={styles.card}>
+          <View style={styles.cardHeader}>
+            <Ionicons name="document-text" size={20} color={colors.primary} />
+            <Text style={styles.sectionTitle}>Notes</Text>
+          </View>
+          {renderInput('Summary', 'notes', 'default')}
+        </LinearGradient>
         
-        <View style={styles.buttonContainer}>
-          <Button title="Save Data" onPress={handleSave} />
-        </View>
+        <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
+          <LinearGradient colors={['#3B82F6', '#2563EB']} style={styles.saveGradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
+            <Text style={styles.saveText}>Save Entry</Text>
+          </LinearGradient>
+        </TouchableOpacity>
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -168,15 +218,34 @@ export const DailyEntryScreen = () => {
 
 const makeStyles = (colors: any, spacing: any, typography: any, radius: any, shadows: any) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
-  scroll: { padding: spacing.m },
-  dateHeader: { ...typography.h2, textAlign: 'center', marginBottom: spacing.m, color: colors.text },
-  sectionTitle: { ...typography.h2, marginTop: spacing.l, marginBottom: spacing.m, color: colors.primary },
-  fieldContainer: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.m, paddingBottom: spacing.s, borderBottomWidth: StyleSheet.hairlineWidth, borderColor: colors.border },
-  timeFieldContainer: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.m, paddingBottom: spacing.s, borderBottomWidth: StyleSheet.hairlineWidth, borderColor: colors.border },
-  timeInputRow: { flexDirection: 'row', alignItems: 'center' },
+  scroll: { padding: spacing.m, paddingBottom: spacing.xxl },
+  dateHeader: { ...typography.h1, textAlign: 'center', marginBottom: spacing.l, color: colors.text, textShadowColor: colors.primary, textShadowRadius: 10, textShadowOffset: { width: 0, height: 0 } },
+  card: {
+    borderRadius: radius.l,
+    padding: spacing.m,
+    marginBottom: spacing.l,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.05)',
+    ...shadows.medium,
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: spacing.m,
+    paddingBottom: spacing.s,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255,255,255,0.05)',
+  },
+  sectionTitle: { ...typography.h2, color: colors.primary, marginLeft: spacing.s },
+  fieldContainer: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.m },
   label: { ...typography.body, flex: 1, color: colors.textSecondary },
+  singleInputWrapper: { flexDirection: 'row', alignItems: 'center', flex: 1, justifyContent: 'flex-end' },
+  inputPrefix: { ...typography.body, color: colors.textSecondary, marginRight: spacing.s },
+  input: { flex: 0.8, ...typography.body, color: colors.text, textAlign: 'right', padding: spacing.s, backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: radius.m, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)' },
+  timeInputRow: { flexDirection: 'row', alignItems: 'center' },
   timeLabel: { ...typography.body, marginHorizontal: spacing.xs, color: colors.textSecondary },
-  input: { flex: 1, ...typography.body, color: colors.text, textAlign: 'right', padding: spacing.s, backgroundColor: colors.surface1, borderRadius: 4 },
-  timeInput: { width: 50, ...typography.body, color: colors.text, textAlign: 'center', padding: spacing.s, backgroundColor: colors.surface1, borderRadius: 4 },
-  buttonContainer: { marginTop: spacing.xl, marginBottom: spacing.xxl }
+  timeInput: { width: 55, ...typography.body, color: colors.text, textAlign: 'center', padding: spacing.m, backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: radius.m, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)' },
+  saveButton: { marginTop: spacing.m, marginBottom: spacing.xxl, borderRadius: radius.l, overflow: 'hidden', ...shadows.large },
+  saveGradient: { paddingVertical: spacing.l, alignItems: 'center', justifyContent: 'center' },
+  saveText: { ...typography.h3, color: '#FFF' }
 });

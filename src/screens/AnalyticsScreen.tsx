@@ -190,38 +190,54 @@ export const AnalyticsScreen = () => {
     );
   };
 
-  const renderMonthCharts = () => {
-    const days = getDaysInDateRange(monthStart, getEndOfMonth(monthStart));
-    const studyData: any[] = [];
-    const prodData: any[] = [];
-    
-    days.forEach((dateStr, index) => {
-      const record = records.find(r => r.date === dateStr);
-      const label = (index + 1) % 5 === 0 ? String(index + 1) : ''; // stagger labels
+    const renderMonthCharts = () => {
+      const days = getDaysInDateRange(monthStart, getEndOfMonth(monthStart));
+      const studyData: any[] = [];
+      const prodData: any[] = [];
       
-      if (record) {
-        prodData.push({ value: getScore(record), label });
-        const studyMins = record.aptitude_minutes + record.dsa_minutes + record.other_learning_minutes;
-        studyData.push({ value: parseFloat((studyMins / 60).toFixed(1)), label });
-      } else {
-        prodData.push({ value: 0, label, hideDataPoint: true });
-        studyData.push({ value: 0, label });
-      }
-    });
-
-    return (
-      <>
-        <Card>
-          <Text style={styles.sectionTitle}>Monthly Productivity</Text>
-          <LineChart curved areaChart startFillColor={colors.primary} endFillColor={colors.background} startOpacity={0.4} endOpacity={0.05} isAnimated animationDuration={1200}    xAxisLabelTextStyle={{ color: colors.textSecondary, fontSize: 10 }} yAxisTextStyle={{ color: colors.textSecondary, fontSize: 10 }} rulesColor={colors.border} xAxisColor={colors.border} yAxisColor={colors.border}  data={prodData} width={300} height={200} maxValue={10} color={colors.primary} thickness={2} hideDataPoints />
-        </Card>
-        <Card>
-          <Text style={styles.sectionTitle}>Monthly Study Hours</Text>
-          <BarChart isAnimated animationDuration={1200}    xAxisLabelTextStyle={{ color: colors.textSecondary, fontSize: 10 }} yAxisTextStyle={{ color: colors.textSecondary, fontSize: 10 }} rulesColor={colors.border} xAxisColor={colors.border} yAxisColor={colors.border}  data={studyData} width={300} height={200} frontColor={colors.primary} />
-        </Card>
-      </>
-    );
-  };
+      days.forEach((dateStr, index) => {
+        const record = records.find(r => r.date === dateStr);
+        const label = (index + 1) % 5 === 0 ? String(index + 1) : ''; // stagger labels
+        
+        if (record) {
+          const score = getScore(record);
+          prodData.push({ value: isNaN(score) ? 0 : score, label });
+          const studyMins = record.aptitude_minutes + record.dsa_minutes + record.other_learning_minutes;
+          studyData.push({ value: parseFloat((studyMins / 60).toFixed(1)) || 0, label });
+        } else {
+          prodData.push({ value: 0, label });
+          studyData.push({ value: 0, label });
+        }
+      });
+  
+      return (
+        <>
+          <Card>
+            <Text style={styles.sectionTitle}>Monthly Productivity</Text>
+            <LineChart 
+              curved areaChart startFillColor={colors.primary} endFillColor={colors.background} 
+              startOpacity={0.4} endOpacity={0.05} isAnimated animationDuration={1200}
+              xAxisLabelTextStyle={{ color: colors.textSecondary, fontSize: 10 }} 
+              yAxisTextStyle={{ color: colors.textSecondary, fontSize: 10 }} 
+              rulesColor={colors.border} xAxisColor={colors.border} yAxisColor={colors.border}  
+              data={prodData} width={300} spacing={9} height={200} maxValue={10} 
+              color={colors.primary} thickness={2} hideDataPoints 
+            />
+          </Card>
+          <Card>
+            <Text style={styles.sectionTitle}>Monthly Study Hours</Text>
+            <BarChart 
+              isAnimated animationDuration={1200}    
+              xAxisLabelTextStyle={{ color: colors.textSecondary, fontSize: 10 }} 
+              yAxisTextStyle={{ color: colors.textSecondary, fontSize: 10 }} 
+              rulesColor={colors.border} xAxisColor={colors.border} yAxisColor={colors.border}  
+              data={studyData} width={300} spacing={9} barWidth={5} height={200} 
+              frontColor={colors.primary} 
+            />
+          </Card>
+        </>
+      );
+    };
 
   const render90DayCharts = () => {
     // 90 days chunked by week
@@ -249,19 +265,36 @@ export const AnalyticsScreen = () => {
 
     weeksData.forEach(w => {
       const stats = getAggregateStats(w.records);
-      prodData.push({ value: stats.averageScore, label: w.weekLabel });
-      studyData.push({ value: parseFloat((stats.totalStudyMinutes / 60).toFixed(1)), label: w.weekLabel });
+      const score = stats.averageScore;
+      const label = w.weekLabel;
+      prodData.push({ value: isNaN(score) ? 0 : score, label });
+      studyData.push({ value: parseFloat((stats.totalStudyMinutes / 60).toFixed(1)) || 0, label });
     });
 
     return (
       <>
         <Card>
-          <Text style={styles.sectionTitle}>Productivity Trend (By Week)</Text>
-          <LineChart curved areaChart startFillColor={colors.primary} endFillColor={colors.background} startOpacity={0.4} endOpacity={0.05} isAnimated animationDuration={1200}    xAxisLabelTextStyle={{ color: colors.textSecondary, fontSize: 10 }} yAxisTextStyle={{ color: colors.textSecondary, fontSize: 10 }} rulesColor={colors.border} xAxisColor={colors.border} yAxisColor={colors.border}  data={prodData} width={300} height={200} maxValue={10} color={colors.primary} thickness={3} />
+          <Text style={styles.sectionTitle}>90-Day Productivity</Text>
+          <LineChart 
+            curved areaChart startFillColor={colors.primary} endFillColor={colors.background} 
+            startOpacity={0.4} endOpacity={0.05} isAnimated animationDuration={1200}    
+            xAxisLabelTextStyle={{ color: colors.textSecondary, fontSize: 10 }} 
+            yAxisTextStyle={{ color: colors.textSecondary, fontSize: 10 }} 
+            rulesColor={colors.border} xAxisColor={colors.border} yAxisColor={colors.border}  
+            data={prodData} width={300} spacing={20} height={200} maxValue={10} 
+            color={colors.primary} thickness={2} hideDataPoints 
+          />
         </Card>
         <Card>
-          <Text style={styles.sectionTitle}>Study Hours (By Week)</Text>
-          <BarChart isAnimated animationDuration={1200}    xAxisLabelTextStyle={{ color: colors.textSecondary, fontSize: 10 }} yAxisTextStyle={{ color: colors.textSecondary, fontSize: 10 }} rulesColor={colors.border} xAxisColor={colors.border} yAxisColor={colors.border}  data={studyData} width={300} height={200} frontColor={colors.primary} />
+          <Text style={styles.sectionTitle}>90-Day Study Hours</Text>
+          <BarChart 
+            isAnimated animationDuration={1200}    
+            xAxisLabelTextStyle={{ color: colors.textSecondary, fontSize: 10 }} 
+            yAxisTextStyle={{ color: colors.textSecondary, fontSize: 10 }} 
+            rulesColor={colors.border} xAxisColor={colors.border} yAxisColor={colors.border}  
+            data={studyData} width={300} spacing={15} barWidth={8} height={200} 
+            frontColor={colors.primary} 
+          />
         </Card>
       </>
     );

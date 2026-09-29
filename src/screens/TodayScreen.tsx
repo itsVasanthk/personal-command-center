@@ -1,9 +1,12 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Button, Animated } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Button, Animated, Dimensions } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+// @ts-ignore
+import ConfettiCannon from 'react-native-confetti-cannon';
+
 import { useStore } from '../store';
 import { useAppTheme } from '../theme';
 import { formatDate, getToday } from '../utils/dateUtils';
@@ -26,8 +29,10 @@ export const TodayScreen = () => {
       Animated.timing(v, { toValue: 1, duration: 600, useNativeDriver: true })
     )).start();
   }, []);
+
   const { colors, spacing, typography, radius, shadows } = useAppTheme();
-    const navigation = useNavigation<NavigationProp>();
+  const navigation = useNavigation<NavigationProp>();
+  
   const todayRecord = useStore(state => state.todayRecord);
   const tasks = useStore(state => state.tasks);
   const targets = useStore(state => state.targets);
@@ -42,8 +47,28 @@ export const TodayScreen = () => {
   
   const [newTask, setNewTask] = useState('');
   const [isTaskSheetOpen, setIsTaskSheetOpen] = useState(false);
+  const [showConfetti, setShowConfetti] = useState(false);
+  const hasTriggeredConfetti = useRef(false);
 
   const score = calculateDailyScore(todayRecord, tasks, weights, targets, enabledMetrics);
+
+  useEffect(() => {
+    if (score > 7.0 && !hasTriggeredConfetti.current) {
+      hasTriggeredConfetti.current = true;
+      setShowConfetti(true);
+      setTimeout(() => {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      }, 300);
+      
+      // Reset confetti so it can fire again if they re-trigger it
+      setTimeout(() => {
+        setShowConfetti(false);
+      }, 5000);
+    } else if (score <= 7.0) {
+      // Allow it to trigger again if score drops below 7 and comes back up
+      hasTriggeredConfetti.current = false;
+    }
+  }, [score]);
   const netIncome = (todayRecord?.income || 0) - (todayRecord?.expenses || 0);
   
   const totalStudyMinutes = (todayRecord?.aptitude_minutes || 0) + 
@@ -191,6 +216,17 @@ export const TodayScreen = () => {
           <Button title="Add Task" onPress={handleAddTask} color={colors.primary} />
         </View>
       </BottomSheet>
+      
+      {showConfetti && (
+        <View style={StyleSheet.absoluteFill} pointerEvents="none">
+          <ConfettiCannon 
+            count={120} 
+            origin={{ x: Dimensions.get('window').width / 2, y: -20 }}
+            fallSpeed={3000}
+            fadeOut={true}
+          />
+        </View>
+      )}
     </>
   );
 };
