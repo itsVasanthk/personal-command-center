@@ -11,6 +11,7 @@ import { SettingsScreen } from '../screens/SettingsScreen';
 import { DailyEntryScreen } from '../screens/DailyEntryScreen';
 import { GoalEntryScreen } from '../screens/GoalEntryScreen';
 import { DailyDetailScreen } from '../screens/DailyDetailScreen';
+import { FocusScreen } from '../screens/FocusScreen';
 import { useAppTheme } from '../theme';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -33,6 +34,7 @@ const TabNavigator = () => {
         tabBarIcon: ({ focused, color, size }) => {
           let iconName: any = 'home';
           if (route.name === 'Today') iconName = focused ? 'home' : 'home-outline';
+          else if (route.name === 'Focus') iconName = focused ? 'timer' : 'timer-outline';
           else if (route.name === 'Analytics') iconName = focused ? 'stats-chart' : 'stats-chart-outline';
           else if (route.name === 'Goals') iconName = focused ? 'flag' : 'flag-outline';
           else if (route.name === 'History') iconName = focused ? 'calendar' : 'calendar-outline';
@@ -54,6 +56,7 @@ const TabNavigator = () => {
       })}
     >
       <Tab.Screen name="Today" component={TodayScreen} />
+      <Tab.Screen name="Focus" component={FocusScreen} />
       <Tab.Screen name="Analytics" component={AnalyticsScreen} />
       <Tab.Screen name="Goals" component={GoalsScreen} />
       <Tab.Screen name="History" component={HistoryScreen} />

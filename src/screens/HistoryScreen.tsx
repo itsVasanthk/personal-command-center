@@ -2,6 +2,7 @@ import React, { useState, useCallback } from 'react';
 import { View, StyleSheet, ScrollView } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { Calendar } from '../components/Calendar';
+import { TrophyRoom } from '../components/TrophyRoom';
 import { useAppTheme } from '../theme';
 import { getStartOfMonth, getEndOfMonth, getPreviousMonth, getNextMonth, getToday } from '../utils/dateUtils';
 import * as db from '../database';
@@ -39,6 +40,7 @@ export const HistoryScreen = () => {
   return (
     <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.scroll}>
+        <TrophyRoom />
         <Calendar 
           currentMonth={currentMonth}
           recordedDates={recordedDates}
