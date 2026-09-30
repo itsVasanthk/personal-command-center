@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Dimensions, TouchableOpacity } from 'react-native';
 import { useStore } from '../store';
 import { useAppTheme } from '../theme';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as db from '../database';
+import { BottomSheet } from './BottomSheet';
 
 const { width } = Dimensions.get('window');
 
@@ -23,6 +24,7 @@ export const TrophyRoom = () => {
   
   const streaks = useStore(state => state.streaks);
   const [trophies, setTrophies] = useState<Trophy[]>([]);
+  const [selectedTrophy, setSelectedTrophy] = useState<Trophy | null>(null);
 
   useEffect(() => {
     // Calculate achievements
@@ -99,7 +101,12 @@ export const TrophyRoom = () => {
       </View>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         {trophies.map(t => (
-          <View key={t.id} style={[styles.trophyCard, !t.unlocked && styles.lockedCard]}>
+          <TouchableOpacity 
+            key={t.id} 
+            style={[styles.trophyCard, !t.unlocked && styles.lockedCard]}
+            onPress={() => setSelectedTrophy(t)}
+            activeOpacity={0.7}
+          >
             <LinearGradient 
               colors={t.unlocked ? [t.color, `${t.color}80`] : [colors.surface2, colors.surface1]} 
               style={styles.iconContainer}
@@ -107,10 +114,34 @@ export const TrophyRoom = () => {
               <Ionicons name={t.icon as any} size={32} color={t.unlocked ? '#FFF' : colors.textMuted} />
             </LinearGradient>
             <Text style={styles.title} numberOfLines={1}>{t.title}</Text>
-            <Text style={styles.description} numberOfLines={2}>{t.unlocked ? t.description : 'Locked'}</Text>
-          </View>
+            <Text style={styles.description} numberOfLines={2}>{t.unlocked ? t.description : 'Keep grinding to unlock.'}</Text>
+          </TouchableOpacity>
         ))}
       </ScrollView>
+
+      <BottomSheet visible={!!selectedTrophy} onDismiss={() => setSelectedTrophy(null)}>
+        {selectedTrophy && (
+          <View style={styles.modalContent}>
+            <LinearGradient 
+              colors={selectedTrophy.unlocked ? [selectedTrophy.color, `${selectedTrophy.color}80`] : [colors.surface2, colors.surface1]} 
+              style={styles.modalIconContainer}
+            >
+              <Ionicons name={selectedTrophy.icon as any} size={64} color={selectedTrophy.unlocked ? '#FFF' : colors.textMuted} />
+            </LinearGradient>
+            
+            <Text style={styles.modalTitle}>{selectedTrophy.title}</Text>
+            
+            <View style={[styles.statusBadge, { backgroundColor: selectedTrophy.unlocked ? `${colors.success}20` : 'rgba(255,255,255,0.05)' }]}>
+              <Ionicons name={selectedTrophy.unlocked ? "checkmark-circle" : "lock-closed"} size={16} color={selectedTrophy.unlocked ? colors.success : colors.textMuted} />
+              <Text style={[styles.statusText, { color: selectedTrophy.unlocked ? colors.success : colors.textMuted }]}>
+                {selectedTrophy.unlocked ? 'Unlocked' : 'Locked'}
+              </Text>
+            </View>
+
+            <Text style={styles.modalDescription}>{selectedTrophy.description}</Text>
+          </View>
+        )}
+      </BottomSheet>
     </View>
   );
 };
@@ -167,5 +198,44 @@ const makeStyles = (colors: any, spacing: any, typography: any, radius: any, sha
     ...typography.caption,
     color: colors.textSecondary,
     textAlign: 'center',
+  },
+  modalContent: {
+    alignItems: 'center',
+    paddingVertical: spacing.l,
+  },
+  modalIconContainer: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.l,
+    ...shadows.large,
+  },
+  modalTitle: {
+    ...typography.h1,
+    color: colors.text,
+    textAlign: 'center',
+    marginBottom: spacing.m,
+  },
+  statusBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: spacing.m,
+    paddingVertical: spacing.s,
+    borderRadius: 20,
+    marginBottom: spacing.l,
+  },
+  statusText: {
+    ...typography.body,
+    fontWeight: 'bold',
+    marginLeft: spacing.xs,
+  },
+  modalDescription: {
+    ...typography.body,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: 24,
+    paddingHorizontal: spacing.xl,
   }
 });
